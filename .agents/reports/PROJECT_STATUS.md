@@ -1,0 +1,14 @@
+# Project Status
+- Current Phase: Phase 3 (UI/Backend Integration) & Phase 5 (Data Cleaning)
+- Overall Status: IN_PROGRESS
+- Architecture Status: IMPLEMENTED
+- Backend Status: STUBS_IMPLEMENTED
+- Frontend Status: NOT_STARTED
+- Database/authentication Status: IMPLEMENTED (Schema created)
+- Dataset Status: GENERATED (Raw Data)
+- ML Status: NOT_STARTED
+- Testing Status: NOT_STARTED
+- Documentation Status: INITIALIZED
+- Known Issues: None
+- Blocked Work: None
+- Next Milestones: Frontend UI implementation (Siddharth) and EDA (Sirisha).

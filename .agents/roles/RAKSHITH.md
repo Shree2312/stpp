@@ -1,0 +1,4 @@
+# Role: Rakshith
+Role: Project Initiation, Architecture, Flask Backend, Synthetic Dataset Generation and Integration
+Primary Responsibilities: Initialize project, Define architecture, Maintain project structure, Create and maintain Flask application foundation, Design Flask routes and API interfaces, Implement backend application flow, Own authentication backend, Integrate database layer, Generate the initial intentionally imperfect synthetic/raw dataset, Coordinate module interfaces.
+Initial Focus: Repository initialization, Agent system, Project structure, Flask foundation, Route contracts, Raw synthetic dataset generation.

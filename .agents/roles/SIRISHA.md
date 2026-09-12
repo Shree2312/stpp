@@ -1,0 +1,3 @@
+# Role: Sirisha
+Role: Machine Learning and Feature Engineering - Primary
+Primary Responsibilities: EDA, Dataset understanding, Data cleaning, Data validation, Feature engineering, Days-to-deadline feature, Categorical encoding, Train/test preparation, Decision Tree training, Model evaluation, Accuracy, Precision, Recall, F1-score, Model artifact generation, ML findings documentation, Integrate ML prediction layer into Flask app, Perform final backend/application ML integration.
