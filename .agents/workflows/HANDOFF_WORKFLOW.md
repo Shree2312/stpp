@@ -1,2 +1,3 @@
 # Handoff Workflow
 Include what was completed, files changed, what remains, known limitations, how to test.
+- **Agent Instruction:** When a team member completes their phase and is ready for handoff, YOU MUST instruct them to create a Pull Request to merge their branch from their fork back into the parent repository (`WhiteDevil-06/stpp`). Guide them step-by-step through creating the PR on GitHub if they need help.
