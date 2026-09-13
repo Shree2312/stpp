@@ -2,356 +2,208 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>STPP - Smart Task Priority Predictor</title>
     
-    <!-- Google Fonts: Inter -->
+    <!-- Google Fonts: Manrope -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <title>STPP - Smart Task Priority Predictor</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/favicon.png') }}">
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
     <!-- Custom CSS -->
-    <link href="{{ url_for('static', filename='css/styles.css') }}?v=2" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/styles.css') }}?v=3" rel="stylesheet">
+    
+    {% block extra_head %}{% endblock %}
 </head>
-<body class="d-flex flex-column min-vh-100-custom">
+<body>
 
-    {% if session.get('user_id') %}
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-custom">
-        <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-layers-fill me-2 text-accent" viewBox="0 0 16 16">
-                    <path d="M7.765 1.559a.5.5 0 0 1 .47 0l7.5 4a.5.5 0 0 1 0 .882l-7.5 4a.5.5 0 0 1-.47 0l-7.5-4a.5.5 0 0 1 0-.882l7.5-4z"/>
-                    <path d="m2.125 8.567-1.86.992a.5.5 0 0 0 0 .882l7.5 4a.5.5 0 0 0 .47 0l7.5-4a.5.5 0 0 0 0-.882l-1.86-.992-5.17 2.756a1.5 1.5 0 0 1-1.41 0l-5.17-2.756z"/>
-                </svg>
-                STPP
-            </a>
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="var(--text-white)" class="bi bi-list" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
-                </svg>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('tasks_list') }}">Tasks</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('create_task') }}">New Task</a>
-                    </li>
-                </ul>
-                <ul class="navbar-nav ms-auto align-items-center">
-                    <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center" href="{{ url_for('profile') }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-person-circle me-1" viewBox="0 0 16 16">
-                                <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
-                                <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
-                            </svg>
-                            Profile
-                        </a>
-                    </li>
-                    <li class="nav-item ms-2">
-                        <a class="nav-link text-danger" href="{{ url_for('logout') }}">Logout</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-    {% endif %}
-
-    <!-- Main Content -->
-    <main class="flex-grow-1 container py-5 fade-in-up">
-        
-        <!-- Flash Messages -->
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert" style="background-color: var(--surface); border-color: var(--border); color: var(--text-offwhite);">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="filter: invert(1);"></button>
+                    <div class="stpp-toast toast-{{ 'error' if category == 'error' else 'success' }} animate-fade-in">
+                        <i data-lucide="{{ 'alert-circle' if category == 'error' else 'check-circle' }}"></i>
+                        <div>{{ message }}</div>
+                        <button class="toast-close" onclick="this.parentElement.remove()">
+                            <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+                        </button>
                     </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
+    </div>
 
-        {% block content %}{% endblock %}
-    </main>
+    {% if session.get('user_id') %}
+    <!-- App Shell (Authenticated) -->
+    <div class="app-shell">
+        
+        <!-- Mobile Topbar -->
+        <div class="mobile-topbar w-100">
+            <a href="{{ url_for('dashboard') }}" class="mobile-brand d-flex align-items-center gap-2">
+                <i data-lucide="layers" class="text-sage"></i> STPP
+            </a>
+            <button class="hamburger-btn" id="mobileMenuBtn">
+                <i data-lucide="menu"></i>
+            </button>
+        </div>
 
-    <!-- Footer -->
-    <footer class="mt-auto py-3 text-center" style="background-color: var(--surface); border-top: 1px solid var(--border);">
-        <p class="mb-0 text-muted-custom small">&copy; 2026 STPP Team. Built for efficiency.</p>
-    </footer>
-
-    <!-- Rolling Calendar Modal -->
-    <div class="modal fade" id="rollingCalendarModal" tabindex="-1" aria-labelledby="rollingCalendarModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark-surface border-custom">
-                <div class="modal-header border-custom py-2">
-                    <button type="button" class="btn text-muted-custom" data-bs-dismiss="modal">Cancel</button>
-                    <h6 class="modal-title text-white m-0" id="rollingCalendarModalLabel">Select Date</h6>
-                    <button type="button" class="btn text-softblue fw-bold" id="confirmDateBtn">Done</button>
-                </div>
-                <div class="modal-body p-0">
-                    <div class="rolling-calendar-container">
-                        <div class="rolling-fade-top"></div>
-                        <div class="rolling-fade-bottom"></div>
-                        <div class="rolling-highlight"></div>
-                        
-                        <div class="rolling-col" id="colMonth">
-                            <!-- Populated by JS -->
-                        </div>
-                        <div class="rolling-col" id="colDate">
-                            <!-- Populated by JS -->
-                        </div>
-                        <div class="rolling-col" id="colYear">
-                            <!-- Populated by JS -->
-                        </div>
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header d-flex justify-content-between align-items-center">
+                <a href="{{ url_for('dashboard') }}" class="text-decoration-none text-white d-flex align-items-center">
+                    <i data-lucide="layers" class="text-sage me-2" style="flex-shrink: 0;"></i>
+                    <div class="brand-text-container">
+                        <div style="line-height: 1.1;" class="brand-text">STPP</div>
+                        <div class="text-muted brand-subtitle" style="font-size: 0.65rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">Smart Task Predictor</div>
+                    </div>
+                </a>
+                <button class="btn btn-ghost p-1 d-none d-lg-block text-muted hover-white" id="sidebarToggleBtn">
+                    <i data-lucide="chevron-left" id="sidebarToggleIcon" style="width: 20px; height: 20px;"></i>
+                </button>
+                <button class="hamburger-btn d-lg-none d-block p-0" id="closeSidebarBtn">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                {% set active_page = active_page|default('dashboard') %}
+                
+                <a href="{{ url_for('dashboard') }}" class="nav-item {{ 'active' if active_page == 'dashboard' else '' }}" title="Dashboard">
+                    <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('tasks_list') }}" class="nav-item {{ 'active' if active_page == 'tasks' else '' }}" title="My Tasks">
+                    <i data-lucide="check-square"></i> <span>My Tasks</span>
+                </a>
+                
+                <div class="mt-4 mb-2 ms-3 text-muted nav-section-title" style="font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">Account</div>
+                
+                <a href="{{ url_for('profile') }}" class="nav-item {{ 'active' if active_page == 'profile' else '' }}" title="Profile">
+                    <i data-lucide="user"></i> <span>Profile</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-item danger-link" title="Logout">
+                    <i data-lucide="log-out"></i> <span>Logout</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background-color: var(--graphite); display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); flex-shrink: 0;">
+                        <i data-lucide="user" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+                    </div>
+                    <div class="user-details" style="line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                        <div class="text-white fw-medium text-truncate" style="font-size: 0.85rem;" title="{{ current_user.name if current_user else 'User' }}">{{ current_user.name if current_user else 'User' }}</div>
+                        <div class="text-muted text-truncate" style="font-size: 0.75rem;">Workspace</div>
                     </div>
                 </div>
             </div>
-        </div>
+        </aside>
+        
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="page-content animate-fade-in">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
     </div>
+    
+    {% else %}
+    <!-- Public Pages (Auth) -->
+    <main class="animate-fade-in">
+        {% block auth_content %}{% endblock %}
+    </main>
+    {% endif %}
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Custom Rolling Calendar Logic -->
+    <!-- Initialize Lucide Icons -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const today = new Date();
-            const currentYear = today.getFullYear();
-            
-            // Allow range from today's year up to 2030 (or +5 years)
-            const minYear = Math.max(2026, currentYear);
-            const maxYear = 2030;
-            
-            let activeInput = null;
-            let calendarModal = new bootstrap.Modal(document.getElementById('rollingCalendarModal'));
-            
-            const colMonth = document.getElementById('colMonth');
-            const colDate = document.getElementById('colDate');
-            const colYear = document.getElementById('colYear');
-            
-            // Populate Year
-            colYear.innerHTML = '';
-            for(let y = minYear; y <= maxYear; y++) {
-                colYear.innerHTML += `<div class="rolling-item" data-val="${y}">${y}</div>`;
-            }
-            
-            // Populate Month
-            colMonth.innerHTML = '';
-            months.forEach((m, idx) => {
-                colMonth.innerHTML += `<div class="rolling-item" data-val="${idx}">${m}</div>`;
-            });
-            
-            // Populate Date (1-31, will be adjusted dynamically)
-            function populateDates(year, month) {
-                const daysInMonth = new Date(year, month + 1, 0).getDate();
-                colDate.innerHTML = '';
-                for(let d = 1; d <= daysInMonth; d++) {
-                    colDate.innerHTML += `<div class="rolling-item" data-val="${d}">${d}</div>`;
-                }
-                disablePastDates();
-            }
-            
-            // Helper to get active item based on scroll position
-            function updateActiveItem(col) {
-                const items = col.querySelectorAll('.rolling-item');
-                const center = col.scrollTop + (col.clientHeight / 2);
-                let closest = null;
-                let minDiff = Infinity;
-                
-                items.forEach(item => {
-                    const itemCenter = item.offsetTop + (item.clientHeight / 2);
-                    const diff = Math.abs(center - itemCenter);
-                    if(diff < minDiff) {
-                        minDiff = diff;
-                        closest = item;
-                    }
-                });
-                
-                items.forEach(i => i.classList.remove('active'));
-                if(closest) closest.classList.add('active');
-                
-                // If month or year changed, adjust dates
-                if(col === colMonth || col === colYear) {
-                    const selYear = getSelectedValue(colYear);
-                    const selMonth = getSelectedValue(colMonth);
-                    if(selYear !== null && selMonth !== null) {
-                        const currentSelDate = getSelectedValue(colDate);
-                        populateDates(selYear, selMonth);
-                        scrollToValue(colDate, currentSelDate || 1);
-                    }
-                }
-                
-                disablePastDates();
-            }
-            
-            function getSelectedValue(col) {
-                const active = col.querySelector('.rolling-item.active');
-                return active ? parseInt(active.getAttribute('data-val')) : null;
-            }
-            
-            function scrollToValue(col, val) {
-                const items = Array.from(col.querySelectorAll('.rolling-item'));
-                let target = items.find(i => parseInt(i.getAttribute('data-val')) === val);
-                if(!target && items.length > 0) target = items[items.length - 1]; // fallback to last day
-                
-                if(target) {
-                    const centerOffset = (col.clientHeight / 2) - (target.clientHeight / 2);
-                    col.scrollTo({ top: target.offsetTop - centerOffset, behavior: 'smooth' });
-                    items.forEach(i => i.classList.remove('active'));
-                    target.classList.add('active');
-                }
-            }
-            
-            function disablePastDates() {
-                const sy = getSelectedValue(colYear);
-                const sm = getSelectedValue(colMonth);
-                
-                const ty = today.getFullYear();
-                const tm = today.getMonth();
-                const td = today.getDate();
-                
-                // Month Column
-                colMonth.querySelectorAll('.rolling-item').forEach(m => {
-                    const val = parseInt(m.getAttribute('data-val'));
-                    if (sy === ty && val < tm) m.classList.add('disabled');
-                    else m.classList.remove('disabled');
-                });
-                
-                // Date Column
-                colDate.querySelectorAll('.rolling-item').forEach(d => {
-                    const val = parseInt(d.getAttribute('data-val'));
-                    if (sy === ty && sm === tm && val < td) d.classList.add('disabled');
-                    else d.classList.remove('disabled');
+        lucide.createIcons();
+        
+        // Global ESC Listener for Modals
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const activeOverlays = document.querySelectorAll('.stpp-overlay.active');
+                activeOverlays.forEach(overlay => {
+                    overlay.classList.remove('active');
                 });
             }
-            
-            // Attach Scroll Listeners
-            [colMonth, colDate, colYear].forEach(col => {
-                let isScrolling;
-                col.addEventListener('scroll', () => {
-                    window.clearTimeout(isScrolling);
-                    isScrolling = setTimeout(() => { updateActiveItem(col); }, 100);
-                });
-                
-                // Click to scroll
-                col.addEventListener('click', (e) => {
-                    if(e.target.classList.contains('rolling-item') && !e.target.classList.contains('disabled')) {
-                        const val = parseInt(e.target.getAttribute('data-val'));
-                        scrollToValue(col, val);
-                    }
-                });
-            });
-            
-            // Bind to inputs
-            document.querySelectorAll('.datepicker').forEach(input => {
-                input.readOnly = true;
-                input.style.cursor = 'pointer';
-                input.addEventListener('click', function() {
-                    activeInput = this;
-                    let d = new Date();
-                    if(this.value) {
-                        const parts = this.value.split('-');
-                        if(parts.length === 3) {
-                            d = new Date(parts[0], parts[1]-1, parts[2]);
-                        }
-                    }
-                    
-                    populateDates(d.getFullYear(), d.getMonth());
-                    
-                    // Show modal first to get dimensions for scroll
-                    calendarModal.show();
-                    
-                    // Delay scrolling to allow modal to render
-                    setTimeout(() => {
-                        scrollToValue(colYear, d.getFullYear());
-                        scrollToValue(colMonth, d.getMonth());
-                        scrollToValue(colDate, d.getDate());
-                    }, 200);
-                });
-            });
-            
-            // Confirm Date
-            document.getElementById('confirmDateBtn').addEventListener('click', () => {
-                let y = getSelectedValue(colYear);
-                let m = getSelectedValue(colMonth);
-                let d = getSelectedValue(colDate);
-                
-                // Validate past date
-                const selected = new Date(y, m, d);
-                const compareToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                
-                if (selected < compareToday) {
-                    y = today.getFullYear();
-                    m = today.getMonth();
-                    d = today.getDate();
-                }
-                
-                if(activeInput) {
-                    const mm = String(m + 1).padStart(2, '0');
-                    const dd = String(d).padStart(2, '0');
-                    activeInput.value = `${y}-${mm}-${dd}`;
-                }
-                calendarModal.hide();
-            });
         });
-    </script>
 
-    <!-- Premium 3D Tilt Effect Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const tiltElements = document.querySelectorAll('.tilt-card');
-            tiltElements.forEach(el => {
-                // Ensure element has relative positioning for the glare
-                if(getComputedStyle(el).position === 'static') {
-                    el.style.position = 'relative';
-                }
-                
-                el.addEventListener('mousemove', (e) => {
-                    const rect = el.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    const centerX = rect.width / 2;
-                    const centerY = rect.height / 2;
-                    
-                    // Increased tilt multiplier from 10 to 25
-                    const rotateX = ((y - centerY) / centerY) * -25; 
-                    const rotateY = ((x - centerX) / centerX) * 25;
-                    
-                    // Dynamic glare coordinates
-                    const glareX = (x / rect.width) * 100;
-                    const glareY = (y / rect.height) * 100;
-                    
-                    el.style.transform = `perspective(1000px) scale(1.05) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-                    el.style.zIndex = '10';
-                    
-                    // Move the glow to track the mouse exactly
-                    const glow = el.querySelector('.profile-glow');
-                    if (glow) {
-                        glow.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(126, 166, 196, 0.15) 0%, transparent 60%)`;
-                    }
-                });
-                
-                el.addEventListener('mouseleave', () => {
-                    el.style.transform = `perspective(1000px) scale(1) rotateX(0deg) rotateY(0deg)`;
-                    el.style.zIndex = '1';
-                    
-                    const glow = el.querySelector('.profile-glow');
-                    if (glow) {
-                        glow.style.background = `radial-gradient(circle at center, rgba(126, 166, 196, 0.05) 0%, transparent 60%)`;
-                    }
-                });
+        // Mobile Sidebar Toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+        const sidebar = document.getElementById('sidebar');
+        
+        if (mobileMenuBtn && sidebar) {
+            mobileMenuBtn.addEventListener('click', () => {
+                sidebar.classList.add('mobile-open');
             });
-        });
+            
+            closeSidebarBtn.addEventListener('click', () => {
+                sidebar.classList.remove('mobile-open');
+            });
+            
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth <= 1024 && sidebar.classList.contains('mobile-open')) {
+                    if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                        sidebar.classList.remove('mobile-open');
+                    }
+                }
+            });
+        }
+        
+        // Desktop Sidebar Toggle
+        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+        const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
+        
+        // Check local storage for preference
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            sidebar.classList.add('collapsed');
+            if(sidebarToggleIcon) {
+                sidebarToggleIcon.setAttribute('data-lucide', 'chevron-right');
+                lucide.createIcons(); // Re-render icon
+            }
+        }
+        
+        if (sidebarToggleBtn) {
+            sidebarToggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+                const isCollapsed = sidebar.classList.contains('collapsed');
+                localStorage.setItem('sidebarCollapsed', isCollapsed);
+                
+                // Change icon
+                if (isCollapsed) {
+                    sidebarToggleIcon.setAttribute('data-lucide', 'chevron-right');
+                } else {
+                    sidebarToggleIcon.setAttribute('data-lucide', 'chevron-left');
+                }
+                lucide.createIcons();
+            });
+        }
+        
+        // Auto-dismiss toasts after 5 seconds
+        setTimeout(() => {
+            const toasts = document.querySelectorAll('.stpp-toast');
+            toasts.forEach(t => {
+                t.style.opacity = '0';
+                t.style.transform = 'translateY(20px)';
+                t.style.transition = 'all 0.3s ease';
+                setTimeout(() => t.remove(), 300);
+            });
+        }, 5000);
     </script>
     
     {% block scripts %}{% endblock %}

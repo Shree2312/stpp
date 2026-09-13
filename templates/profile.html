@@ -1,43 +1,217 @@
 {% extends "base.html" %}
+{% set active_page = 'profile' %}
 
 {% block content %}
-<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
-    <div class="col-md-6 col-lg-5">
-        <!-- Tilt Card -->
-        <div class="card-custom tilt-card p-5 fade-in-up" style="position: relative; overflow: hidden; transform-style: preserve-3d;">
-            
-            <!-- Glow background effect -->
-            <div class="profile-glow"></div>
-            
-            <div style="transform: translateZ(30px); position: relative; z-index: 2;">
-                <div class="text-center mb-4">
-                    <div class="profile-avatar mb-3 mx-auto shadow">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="currentColor" class="bi bi-person-fill text-softblue" viewBox="0 0 16 16">
-                            <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
-                        </svg>
-                    </div>
-                    <h2 class="text-white fw-bold mb-1" style="transform: translateZ(15px);">{{ user.name }}</h2>
-                    <p class="text-muted-custom" style="transform: translateZ(10px);">{{ user.email }}</p>
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="text-white fw-bold m-0">Account Profile</h2>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Identity & Stats -->
+    <div class="col-lg-5 col-xl-4">
+        <div class="stpp-card p-0 overflow-hidden h-100 d-flex flex-column">
+            <div class="p-4 p-md-5 d-flex flex-column align-items-center text-center border-bottom border-custom flex-grow-1">
+                <div style="width: 100px; height: 100px; border-radius: 50%; background-color: var(--graphite); display: flex; align-items: center; justify-content: center; border: 3px solid var(--border); flex-shrink: 0; margin-bottom: 1.5rem;">
+                    <span class="text-white fw-bold fs-1">{{ user.name[0] | upper }}</span>
                 </div>
-                
-                <hr class="border-custom my-4">
-                
-                <div class="row text-center mb-4" style="transform: translateZ(20px);">
-                    <div class="col-6">
-                        <h4 class="text-white fw-bold mb-0">{{ total_tasks }}</h4>
-                        <span class="text-muted-custom small text-uppercase tracking-wide">Total Tasks</span>
+                <h3 class="text-white fw-bold mb-2" style="word-break: break-word;">{{ user.name }}</h3>
+                <p class="text-muted m-0 fs-6" style="word-break: break-word;">{{ user.email }}</p>
+                <div class="mt-4 pt-4 border-top border-custom w-100">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small text-uppercase tracking-wide fw-bold">Workspace Role</span>
+                        <span class="badge bg-sage text-dark fw-bold">Owner</span>
                     </div>
-                    <div class="col-6">
-                        <h4 class="text-sage fw-bold mb-0">{{ critical_tasks }}</h4>
-                        <span class="text-muted-custom small text-uppercase tracking-wide">Critical</span>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted small text-uppercase tracking-wide fw-bold">Status</span>
+                        <span class="badge bg-success bg-opacity-10 text-success fw-bold"><i data-lucide="check-circle" style="width: 12px; height: 12px; margin-right: 4px;"></i>Active</span>
                     </div>
                 </div>
-                
-                <div class="d-grid mt-2" style="transform: translateZ(25px);">
-                    <a href="{{ url_for('logout') }}" class="btn btn-outline-danger py-2 fw-medium">Sign Out</a>
+            </div>
+            
+            <div class="row g-0">
+                <div class="col-6 p-4 border-end border-custom text-center hover-bg-graphite transition-all">
+                    <div class="text-muted small text-uppercase tracking-wide mb-2" style="font-weight: 600;">Total Tasks</div>
+                    <div class="text-white fw-bold fs-2">{{ total_tasks }}</div>
+                </div>
+                <div class="col-6 p-4 text-center hover-bg-graphite transition-all">
+                    <div class="text-muted small text-uppercase tracking-wide mb-2" style="font-weight: 600;">Critical Tasks</div>
+                    <div class="text-danger fw-bold fs-2">{{ critical_tasks }}</div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Right Column: Account Settings -->
+    <div class="col-lg-7 col-xl-8">
+        <div class="stpp-card p-0">
+            <div class="p-4 border-bottom border-custom">
+                <h4 class="text-white fw-bold m-0 fs-5"><i data-lucide="settings" class="text-muted me-2" style="width: 20px; height: 20px;"></i> Account Settings</h4>
+            </div>
+            
+            <!-- Profile Row -->
+            <div class="p-4 border-bottom border-custom hover-bg-graphite transition-all d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+                <div>
+                    <h5 class="text-white fw-medium mb-1 fs-6">Profile Details</h5>
+                    <p class="text-muted small m-0">Update your name and email address.</p>
+                </div>
+                <button class="btn btn-secondary d-flex align-items-center gap-2 flex-shrink-0" onclick="openOverlay('editProfileOverlay')">
+                    <i data-lucide="edit-2" style="width: 16px; height: 16px;"></i> Edit Profile
+                </button>
+            </div>
+            
+            <!-- Security Row -->
+            <div class="p-4 hover-bg-graphite transition-all d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+                <div>
+                    <h5 class="text-white fw-medium mb-1 fs-6">Security</h5>
+                    <p class="text-muted small m-0">Change your password to secure your account.</p>
+                </div>
+                <button class="btn btn-secondary d-flex align-items-center gap-2 flex-shrink-0" onclick="openOverlay('changePasswordOverlay')">
+                    <i data-lucide="lock" style="width: 16px; height: 16px;"></i> Change Password
+                </button>
+            </div>
+        </div>
+        
+        <div class="mt-4 p-4 stpp-card border-danger border-opacity-25 bg-danger bg-opacity-10 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+            <div>
+                <h5 class="text-danger fw-medium mb-1 fs-6">Danger Zone</h5>
+                <p class="text-muted small m-0">Permanently delete your account and all tasks.</p>
+            </div>
+            <button class="btn btn-danger d-flex align-items-center gap-2 flex-shrink-0" onclick="openOverlay('deleteAccountOverlay')">
+                <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i> Delete Account
+            </button>
+        </div>
+    </div>
 </div>
+
+<!-- Edit Profile Overlay -->
+<div class="stpp-overlay" id="editProfileOverlay">
+    <div class="stpp-action-card">
+        <div class="stpp-card-header">
+            <h4>Edit Profile</h4>
+            <button type="button" class="stpp-btn-close" onclick="closeOverlay('editProfileOverlay')">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <form method="POST" action="{{ url_for('edit_profile') }}">
+            <div class="stpp-card-body">
+                {{ edit_form.hidden_tag() }}
+                <div class="mb-4">
+                    {{ edit_form.name.label(class="form-label text-offwhite") }}
+                    {{ edit_form.name(class="form-control", placeholder="Your full name") }}
+                </div>
+                <div class="mb-3">
+                    {{ edit_form.email.label(class="form-label text-offwhite") }}
+                    {{ edit_form.email(class="form-control", placeholder="Your email address") }}
+                </div>
+            </div>
+            <div class="stpp-card-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeOverlay('editProfileOverlay')">Cancel</button>
+                {{ edit_form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Change Password Overlay -->
+<div class="stpp-overlay" id="changePasswordOverlay">
+    <div class="stpp-action-card">
+        <div class="stpp-card-header">
+            <h4>Change Password</h4>
+            <button type="button" class="stpp-btn-close" onclick="closeOverlay('changePasswordOverlay')">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <form method="POST" action="{{ url_for('change_password') }}">
+            <div class="stpp-card-body">
+                {{ password_form.hidden_tag() }}
+                <div class="mb-4">
+                    {{ password_form.current_password.label(class="form-label text-offwhite") }}
+                    {{ password_form.current_password(class="form-control", type="password", placeholder="••••••••") }}
+                </div>
+                <div class="mb-3">
+                    {{ password_form.new_password.label(class="form-label text-offwhite") }}
+                    {{ password_form.new_password(class="form-control", type="password", placeholder="••••••••") }}
+                    <div class="form-text text-muted">Minimum 6 characters.</div>
+                </div>
+            </div>
+            <div class="stpp-card-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeOverlay('changePasswordOverlay')">Cancel</button>
+                {{ password_form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Account Overlay -->
+<div class="stpp-overlay" id="deleteAccountOverlay">
+    <div class="stpp-action-card border-danger" style="border-color: rgba(220, 53, 69, 0.5) !important;">
+        <div class="stpp-card-header border-danger border-opacity-25 bg-danger bg-opacity-10">
+            <h4 class="text-danger d-flex align-items-center gap-2">
+                <i data-lucide="alert-triangle" style="width: 20px; height: 20px;"></i>
+                Delete Account
+            </h4>
+            <button type="button" class="stpp-btn-close" onclick="closeOverlay('deleteAccountOverlay')">
+                <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+            </button>
+        </div>
+        <div class="stpp-card-body text-center py-4">
+            <div class="mb-3 text-danger">
+                <i data-lucide="trash-2" style="width: 48px; height: 48px; opacity: 0.8;"></i>
+            </div>
+            <h5 class="text-white mb-3">Are you absolutely sure?</h5>
+            <p class="text-muted mb-4">
+                This action <strong class="text-white">cannot be undone</strong>. This will permanently delete your user account, remove all your tasks, and instantly log you out.
+            </p>
+            <div class="text-start bg-dark p-3 rounded border border-custom mb-2">
+                <label for="deleteVerificationInput" class="form-label text-muted small text-uppercase tracking-wide fw-bold mb-2">
+                    To verify, type <strong class="text-white user-select-all">{{ delete_verification_code }}</strong> below:
+                </label>
+                <input type="text" class="form-control bg-transparent text-white border-secondary" id="deleteVerificationInput" 
+                       autocomplete="off" oninput="checkDeleteVerification(this.value, '{{ delete_verification_code }}')">
+            </div>
+        </div>
+        <div class="stpp-card-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeOverlay('deleteAccountOverlay')">Cancel</button>
+            <form action="{{ url_for('delete_account') }}" method="POST" class="d-inline m-0">
+                <button type="submit" class="btn btn-danger" id="deleteConfirmBtn" disabled>Yes, Delete Account</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function checkDeleteVerification(inputVal, expectedCode) {
+        const btn = document.getElementById('deleteConfirmBtn');
+        if (inputVal.trim() === expectedCode) {
+            btn.disabled = false;
+        } else {
+            btn.disabled = true;
+        }
+    }
+</script>
+
+<style>
+    .hover-bg-graphite:hover { background-color: var(--graphite); }
+    .transition-all { transition: background-color 0.2s ease; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openOverlay(id) {
+        document.getElementById(id).classList.add('active');
+    }
+    function closeOverlay(id) {
+        document.getElementById(id).classList.remove('active');
+    }
+    document.querySelectorAll('.stpp-overlay').forEach(overlay => {
+        overlay.addEventListener('click', function(e) {
+            if(e.target === this) {
+                this.classList.remove('active');
+            }
+        });
+    });
+</script>
 {% endblock %}

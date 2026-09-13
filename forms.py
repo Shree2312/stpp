@@ -16,3 +16,13 @@ class OverrideForm(FlaskForm):
     new_priority = StringField('New Priority (Low, Medium, High, Critical)', validators=[DataRequired()])
     reason = TextAreaField('Reason for Override', validators=[DataRequired(), Length(max=200)])
     submit = SubmitField('Override Priority')
+
+class EditProfileForm(FlaskForm):
+    name = StringField('Full Name', validators=[DataRequired(), Length(max=100)])
+    email = StringField('Email Address', validators=[DataRequired(), Length(max=150)])
+    submit = SubmitField('Save Changes')
+
+class ChangePasswordForm(FlaskForm):
+    current_password = StringField('Current Password', validators=[DataRequired()])
+    new_password = StringField('New Password', validators=[DataRequired(), Length(min=6)])
+    submit = SubmitField('Update Password')

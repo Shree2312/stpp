@@ -1,88 +1,106 @@
 {% extends 'base.html' %}
+{% set active_page = 'tasks' %}
 
 {% block content %}
 <div class="mb-4">
-    <a href="{{ url_for('tasks_list') }}" class="text-muted-custom text-decoration-none hover-white">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left me-1" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
-        </svg>
-        Back to Tasks
+    <a href="{{ url_for('tasks_list') }}" class="btn btn-ghost px-0 d-inline-flex align-items-center gap-2">
+        <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i> Back to Tasks
     </a>
 </div>
 
-<div class="row">
+<div class="row g-4">
     <!-- Task Details Column -->
-    <div class="col-lg-8 mb-4">
-        <div class="card-custom h-100 p-4">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <h2 class="text-white m-0">{{ task.title }}</h2>
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary border-custom dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        Actions
+    <div class="col-lg-8">
+        <div class="stpp-card h-100 p-4 p-md-5">
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <h2 class="text-white fw-bold m-0" style="font-size: 1.8rem;">{{ task.title }}</h2>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('edit_task', id=task.task_id) }}" class="btn btn-secondary">
+                        <i data-lucide="edit-2" style="width: 16px; height: 16px; margin-right: 6px;"></i> Edit
+                    </a>
+                    <button type="button" class="btn btn-danger-outline btn-secondary" onclick="openOverlay('deleteOverlay')">
+                        <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-dark bg-graphite border-custom">
-                        <li><a class="dropdown-item hover-bg-surface" href="{{ url_for('edit_task', id=task.task_id) }}">Edit Task</a></li>
-                        <li><hr class="dropdown-divider border-custom"></li>
-                        <li>
-                            <button type="button" class="dropdown-item text-danger hover-bg-surface" onclick="openOverlay('deleteOverlay')">
-                                Delete Task
-                            </button>
-                        </li>
-                    </ul>
                 </div>
             </div>
             
-            <p class="text-offwhite mb-4">{{ task.description or 'No description provided.' }}</p>
+            <div class="text-offwhite fs-5 mb-5" style="line-height: 1.6;">
+                {{ task.description or 'No description provided.' }}
+            </div>
 
-            <h5 class="text-muted-custom mb-3 mt-4 border-bottom border-custom pb-2">Metrics</h5>
+            <div class="form-section-title">Task Parameters</div>
             <div class="row g-4">
                 <div class="col-sm-6 col-md-4">
-                    <div class="text-muted-custom small">Deadline</div>
-                    <div class="text-white fs-5">{{ task.deadline }}</div>
+                    <div class="text-muted small mb-1">Deadline</div>
+                    <div class="text-white d-flex align-items-center gap-2">
+                        <i data-lucide="calendar" style="width: 16px; height: 16px; color: var(--accent-softblue);"></i> {{ task.deadline }}
+                    </div>
                 </div>
                 <div class="col-sm-6 col-md-4">
-                    <div class="text-muted-custom small">Effort</div>
-                    <div class="text-white fs-5">{{ task.estimated_effort }} hrs</div>
+                    <div class="text-muted small mb-1">Estimated Effort</div>
+                    <div class="text-white d-flex align-items-center gap-2">
+                        <i data-lucide="clock" style="width: 16px; height: 16px; color: var(--accent-softblue);"></i> {{ task.estimated_effort }} hrs
+                    </div>
                 </div>
                 <div class="col-sm-6 col-md-4">
-                    <div class="text-muted-custom small">Urgency</div>
-                    <div class="text-white fs-5">{{ task.urgency }}/10</div>
+                    <div class="text-muted small mb-1">Dependencies</div>
+                    <div class="text-white d-flex align-items-center gap-2">
+                        <i data-lucide="link" style="width: 16px; height: 16px; color: var(--accent-softblue);"></i> {{ task.dependencies }} blocker(s)
+                    </div>
                 </div>
                 <div class="col-sm-6 col-md-4">
-                    <div class="text-muted-custom small">Impact</div>
-                    <div class="text-white fs-5">{{ task.business_impact }}/10</div>
+                    <div class="text-muted small mb-1">Urgency</div>
+                    <div class="text-white d-flex align-items-center gap-2">
+                        <i data-lucide="alert-triangle" style="width: 16px; height: 16px; color: var(--accent-sage);"></i> {{ task.urgency }} / 10
+                    </div>
                 </div>
                 <div class="col-sm-6 col-md-4">
-                    <div class="text-muted-custom small">Dependencies</div>
-                    <div class="text-white fs-5">{{ task.dependencies }}</div>
+                    <div class="text-muted small mb-1">Business Impact</div>
+                    <div class="text-white d-flex align-items-center gap-2">
+                        <i data-lucide="trending-up" style="width: 16px; height: 16px; color: var(--accent-sage);"></i> {{ task.business_impact }} / 10
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <div class="text-muted small mb-1">Status</div>
+                    <div class="text-white d-flex align-items-center gap-2">
+                        <i data-lucide="activity" style="width: 16px; height: 16px; color: var(--text-muted);"></i> {{ task.status }}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Priority Status Column -->
-    <div class="col-lg-4 mb-4">
-        <div class="card-custom h-100 p-4 d-flex flex-column">
-            <h5 class="text-muted-custom mb-4 border-bottom border-custom pb-2">Priority Analysis</h5>
+    <!-- Prediction Results Column -->
+    <div class="col-lg-4">
+        <div class="stpp-card h-100 p-0 d-flex flex-column border-0 bg-transparent">
             
-            <div class="text-center mb-4 flex-grow-1 d-flex flex-column justify-content-center">
-                <div class="text-muted-custom small mb-2">Suggested Priority</div>
-                <div>
-                    <span class="badge badge-{{ task.priority|lower }} rounded-pill px-4 py-2 fs-5">
-                        {{ task.priority }}
-                    </span>
-                </div>
-                <div class="mt-3 text-offwhite small">
-                    <strong>Score:</strong> {{ task.priority_score|default('N/A') }}
+            <div class="prediction-box {{ task.priority }} flex-grow-1 d-flex flex-column justify-content-center mb-4">
+                <div class="text-muted" style="letter-spacing: 0.05em; text-transform: uppercase; font-size: 0.8rem; font-weight: 600;">Priority Assessment</div>
+                <div class="prediction-score">{{ task.priority }}</div>
+                
+                <div class="mt-4 pt-4 border-top border-custom text-start">
+                    <div class="text-muted small mb-3">Why this priority?</div>
+                    <ul class="list-unstyled m-0 text-offwhite" style="font-size: 0.9rem;">
+                        <li class="mb-2 d-flex gap-2">
+                            <i data-lucide="check" class="text-sage mt-1" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+                            Base score calculated at {{ task.priority_score|default('N/A') }}
+                        </li>
+                        <li class="mb-2 d-flex gap-2">
+                            <i data-lucide="check" class="text-sage mt-1" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+                            Factored urgency ({{ task.urgency }}) and impact ({{ task.business_impact }})
+                        </li>
+                        <li class="mb-2 d-flex gap-2">
+                            <i data-lucide="check" class="text-sage mt-1" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+                            Adjusted for {{ task.dependencies }} dependencies
+                        </li>
+                    </ul>
                 </div>
             </div>
 
             <!-- Override Section -->
-            <div class="mt-auto border-top border-custom pt-4">
-                <button type="button" class="btn btn-outline-sage w-100" onclick="openOverlay('overrideOverlay')">
-                    Override Priority
-                </button>
-            </div>
+            <button type="button" class="btn btn-secondary w-100 py-3 d-flex align-items-center justify-content-center gap-2" onclick="openOverlay('overrideOverlay')">
+                <i data-lucide="sliders" style="width: 18px; height: 18px;"></i> Manual Override
+            </button>
         </div>
     </div>
 </div>
@@ -92,14 +110,16 @@
     <div class="stpp-action-card">
         <div class="stpp-card-header">
             <h4>Override Priority</h4>
-            <button type="button" class="stpp-btn-close" onclick="closeOverlay('overrideOverlay')">&times;</button>
+            <button type="button" class="stpp-btn-close" onclick="closeOverlay('overrideOverlay')">
+                <i data-lucide="x"></i>
+            </button>
         </div>
         <form method="POST" action="{{ url_for('override_priority', id=task.task_id) }}">
             <div class="stpp-card-body">
                 {{ override_form.hidden_tag() }}
-                <div class="mb-3">
+                <div class="mb-4">
                     <label class="form-label text-offwhite">New Priority</label>
-                    <select name="new_priority" class="form-control form-control-custom" required>
+                    <select name="new_priority" class="form-select" required>
                         <option value="">Select priority...</option>
                         <option value="Low">Low</option>
                         <option value="Medium">Medium</option>
@@ -109,12 +129,12 @@
                 </div>
                 <div class="mb-3">
                     {{ override_form.reason.label(class="form-label text-offwhite") }}
-                    {{ override_form.reason(class="form-control form-control-custom", rows="2") }}
+                    {{ override_form.reason(class="form-control", rows="3", placeholder="Explain why the prediction was incorrect...") }}
                 </div>
             </div>
             <div class="stpp-card-footer">
-                <button type="button" class="btn btn-outline-secondary text-offwhite border-custom" onclick="closeOverlay('overrideOverlay')">Cancel</button>
-                {{ override_form.submit(class="btn btn-primary-custom") }}
+                <button type="button" class="btn btn-ghost" onclick="closeOverlay('overrideOverlay')">Cancel</button>
+                {{ override_form.submit(class="btn btn-primary") }}
             </div>
         </form>
     </div>
@@ -125,15 +145,17 @@
     <div class="stpp-action-card">
         <div class="stpp-card-header">
             <h4>Delete Task</h4>
-            <button type="button" class="stpp-btn-close" onclick="closeOverlay('deleteOverlay')">&times;</button>
+            <button type="button" class="stpp-btn-close" onclick="closeOverlay('deleteOverlay')">
+                <i data-lucide="x"></i>
+            </button>
         </div>
         <div class="stpp-card-body">
-            Are you sure you want to delete the task <strong>"{{ task.title }}"</strong>? This action cannot be undone.
+            Are you sure you want to delete the task <strong class="text-white">"{{ task.title }}"</strong>?<br>This action cannot be undone.
         </div>
         <div class="stpp-card-footer">
-            <button type="button" class="btn btn-outline-secondary text-offwhite border-custom" onclick="closeOverlay('deleteOverlay')">Cancel</button>
+            <button type="button" class="btn btn-secondary" onclick="closeOverlay('deleteOverlay')">Cancel</button>
             <form action="{{ url_for('delete_task', id=task.task_id) }}" method="POST" class="d-inline m-0">
-                <button type="submit" class="btn btn-danger">Confirm Delete</button>
+                <button type="submit" class="btn btn-primary" style="background-color: var(--danger-red); border-color: var(--danger-red); color: white;">Delete</button>
             </form>
         </div>
     </div>
@@ -146,12 +168,9 @@
     function openOverlay(id) {
         document.getElementById(id).classList.add('active');
     }
-    
     function closeOverlay(id) {
         document.getElementById(id).classList.remove('active');
     }
-    
-    // Close on clicking outside the card
     document.querySelectorAll('.stpp-overlay').forEach(overlay => {
         overlay.addEventListener('click', function(e) {
             if(e.target === this) {

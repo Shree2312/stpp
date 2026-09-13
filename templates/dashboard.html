@@ -1,22 +1,26 @@
 {% extends 'base.html' %}
+{% set active_page = 'dashboard' %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="text-white m-0">Dashboard Overview</h2>
-    <a href="{{ url_for('create_task') }}" class="btn btn-primary-custom">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg me-1" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
-        </svg>
-        New Task
+<div class="d-flex justify-content-between align-items-center mb-5">
+    <div>
+        <h2 class="text-white mb-1">Good evening, {{ current_user.name.split(' ')[0] if current_user else 'User' }}.</h2>
+        <p class="text-muted mb-0">Prioritize what matters. Execute with clarity.</p>
+    </div>
+    <a href="{{ url_for('create_task') }}" class="btn btn-primary d-flex align-items-center gap-2">
+        <i data-lucide="plus" style="width: 18px; height: 18px;"></i> New Task
     </a>
 </div>
 
 <div class="row g-4 mb-5">
     <!-- Total Tasks Card -->
     <div class="col-md-3">
-        <div class="card-custom tilt-card p-4 text-center h-100">
-            <div class="text-muted-custom mb-2">Total Tasks</div>
-            <div class="display-4 text-white fw-bold">{{ total_tasks }}</div>
+        <div class="metric-card h-100">
+            <div class="metric-label">
+                <i data-lucide="layers" style="width: 16px; height: 16px;"></i> Total Tasks
+            </div>
+            <div class="metric-value">{{ total_tasks }}</div>
+            <div class="text-muted mt-auto" style="font-size: 0.8rem;">Active in system</div>
         </div>
     </div>
     
@@ -24,71 +28,92 @@
     <div class="col-md-9">
         <div class="row g-4 h-100">
             <div class="col-sm-3">
-                <div class="card-custom tilt-card p-4 text-center h-100" style="border-top: 3px solid #ff6b6b;">
-                    <div class="text-muted-custom mb-2">Critical</div>
-                    <div class="fs-2 text-white">{{ priority_counts.get('Critical', 0) }}</div>
+                <div class="metric-card metric-critical h-100">
+                    <div class="metric-label">
+                        <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:var(--priority-critical);"></span>
+                        Critical
+                    </div>
+                    <div class="metric-value">{{ priority_counts.get('Critical', 0) }}</div>
+                    <div class="text-muted mt-auto" style="font-size: 0.8rem;">Need attention</div>
                 </div>
             </div>
             <div class="col-sm-3">
-                <div class="card-custom tilt-card p-4 text-center h-100" style="border-top: 3px solid #ffa94d;">
-                    <div class="text-muted-custom mb-2">High</div>
-                    <div class="fs-2 text-white">{{ priority_counts.get('High', 0) }}</div>
+                <div class="metric-card metric-high h-100">
+                    <div class="metric-label">
+                        <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:var(--priority-high);"></span>
+                        High
+                    </div>
+                    <div class="metric-value">{{ priority_counts.get('High', 0) }}</div>
+                    <div class="text-muted mt-auto" style="font-size: 0.8rem;">Stay on track</div>
                 </div>
             </div>
             <div class="col-sm-3">
-                <div class="card-custom tilt-card p-4 text-center h-100" style="border-top: 3px solid var(--accent-sage);">
-                    <div class="text-muted-custom mb-2">Medium</div>
-                    <div class="fs-2 text-white">{{ priority_counts.get('Medium', 0) }}</div>
+                <div class="metric-card metric-medium h-100">
+                    <div class="metric-label">
+                        <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:var(--priority-medium);"></span>
+                        Medium
+                    </div>
+                    <div class="metric-value">{{ priority_counts.get('Medium', 0) }}</div>
+                    <div class="text-muted mt-auto" style="font-size: 0.8rem;">Keep going</div>
                 </div>
             </div>
             <div class="col-sm-3">
-                <div class="card-custom tilt-card p-4 text-center h-100" style="border-top: 3px solid var(--accent-softblue);">
-                    <div class="text-muted-custom mb-2">Low</div>
-                    <div class="fs-2 text-white">{{ priority_counts.get('Low', 0) }}</div>
+                <div class="metric-card metric-low h-100">
+                    <div class="metric-label">
+                        <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:var(--priority-low);"></span>
+                        Low
+                    </div>
+                    <div class="metric-value">{{ priority_counts.get('Low', 0) }}</div>
+                    <div class="text-muted mt-auto" style="font-size: 0.8rem;">When available</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<h4 class="text-white mb-3">Recently Added Tasks</h4>
-<div class="card-custom overflow-hidden">
-    <div class="table-responsive">
-        <table class="table table-custom mb-0">
-            <thead>
-                <tr>
-                    <th scope="col" class="ps-4">Title</th>
-                    <th scope="col">Deadline</th>
-                    <th scope="col">Predicted Priority</th>
-                    <th scope="col" class="text-end pe-4">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if recent_tasks %}
-                    {% for task in recent_tasks %}
-                    <tr>
-                        <td class="ps-4 text-white fw-medium">{{ task.title }}</td>
-                        <td class="text-offwhite">{{ task.deadline }}</td>
-                        <td>
-                            <span class="badge badge-{{ task.priority|lower }} rounded-pill px-3 py-2">
-                                {{ task.priority }}
-                            </span>
-                        </td>
-                        <td class="text-end pe-4">
-                            <a href="{{ url_for('view_task', id=task.task_id) }}" class="btn btn-sm btn-outline-sage">View Details</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="4" class="text-center py-5 text-muted-custom">
-                            <p class="mb-2">No tasks added yet.</p>
-                            <a href="{{ url_for('create_task') }}" class="text-softblue text-decoration-none">Create your first task</a>
-                        </td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="text-white m-0">Recent Tasks</h4>
+    <a href="{{ url_for('tasks_list') }}" class="text-softblue text-decoration-none fw-medium" style="font-size: 0.9rem;">View All &rarr;</a>
 </div>
+
+<div class="stpp-card p-0 overflow-hidden">
+    {% if recent_tasks %}
+        {% for task in recent_tasks %}
+        <div class="d-flex align-items-center justify-content-between p-3 border-bottom border-custom last-no-border hover-bg-graphite transition-all">
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge-priority badge-{{ task.priority|lower }}">
+                    {{ task.priority }}
+                </span>
+                <a href="{{ url_for('view_task', id=task.task_id) }}" class="text-white text-decoration-none fw-medium">
+                    {{ task.title }}
+                </a>
+            </div>
+            <div class="d-flex align-items-center gap-4 text-muted" style="font-size: 0.9rem;">
+                <div class="d-flex align-items-center gap-2">
+                    <i data-lucide="calendar" style="width: 14px; height: 14px;"></i> {{ task.deadline }}
+                </div>
+                <div class="d-none d-md-flex align-items-center gap-2">
+                    <i data-lucide="activity" style="width: 14px; height: 14px;"></i> {{ task.status }}
+                </div>
+                <a href="{{ url_for('view_task', id=task.task_id) }}" class="btn btn-ghost btn-sm px-2 py-1">
+                    <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state border-0">
+            <i data-lucide="inbox"></i>
+            <h5 class="text-white mb-2">Your dashboard is empty</h5>
+            <p class="text-muted mb-4">Create your first task to see priority predictions.</p>
+            <a href="{{ url_for('create_task') }}" class="btn btn-primary">Create Task</a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .last-no-border:last-child { border-bottom: none !important; }
+    .hover-bg-graphite:hover { background-color: var(--graphite); }
+    .transition-all { transition: background-color 0.2s ease; }
+</style>
 {% endblock %}

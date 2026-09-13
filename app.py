@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 import os
-from forms import TaskForm, OverrideForm
+from forms import TaskForm, OverrideForm, EditProfileForm, ChangePasswordForm
 from database import get_db_connection
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -18,6 +18,17 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+@app.context_processor
+def inject_user():
+    if 'user_id' in session:
+        conn = get_db_connection(app.config['DATABASE_PATH'])
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, email FROM Users WHERE user_id = ?", (session['user_id'],))
+        user = cursor.fetchone()
+        conn.close()
+        return dict(current_user=user)
+    return dict(current_user=None)
 
 # --- Auth Routes ---
 @app.route('/register', methods=['GET', 'POST'])
@@ -76,7 +87,7 @@ def logout():
     return redirect(url_for('login'))
 
 # --- Dashboard & Task Routes ---
-@app.route('/profile')
+@app.route('/profile', methods=['GET'])
 @login_required
 def profile():
     conn = get_db_connection(app.config['DATABASE_PATH'])
@@ -98,7 +109,61 @@ def profile():
     
     conn.close()
     
-    return render_template('profile.html', user=user, total_tasks=total_tasks, critical_tasks=critical_tasks)
+    edit_form = EditProfileForm(name=user['name'], email=user['email'])
+    password_form = ChangePasswordForm()
+    
+    import random
+    import string
+    delete_verification_code = ''.join(random.choices(string.ascii_uppercase, k=6))
+    
+    return render_template('profile.html', user=user, total_tasks=total_tasks, critical_tasks=critical_tasks, edit_form=edit_form, password_form=password_form, delete_verification_code=delete_verification_code)
+
+@app.route('/profile/edit', methods=['POST'])
+@login_required
+def edit_profile():
+    form = EditProfileForm()
+    if form.validate_on_submit():
+        conn = get_db_connection(app.config['DATABASE_PATH'])
+        cursor = conn.cursor()
+        
+        # Check if email exists for other users
+        cursor.execute("SELECT user_id FROM Users WHERE email = ? AND user_id != ?", (form.email.data, session['user_id']))
+        if cursor.fetchone():
+            flash('Email already in use by another account.', 'error')
+        else:
+            cursor.execute("UPDATE Users SET name = ?, email = ? WHERE user_id = ?", (form.name.data, form.email.data, session['user_id']))
+            conn.commit()
+            flash('Profile updated successfully!', 'success')
+            
+        conn.close()
+    else:
+        flash('Invalid form data.', 'error')
+    return redirect(url_for('profile'))
+
+@app.route('/profile/password', methods=['POST'])
+@login_required
+def change_password():
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        conn = get_db_connection(app.config['DATABASE_PATH'])
+        cursor = conn.cursor()
+        cursor.execute("SELECT password FROM Users WHERE user_id = ?", (session['user_id'],))
+        user = cursor.fetchone()
+        
+        if not check_password_hash(user['password'], form.current_password.data):
+            flash('Current password is incorrect.', 'error')
+        else:
+            hashed_password = generate_password_hash(form.new_password.data)
+            cursor.execute("UPDATE Users SET password = ? WHERE user_id = ?", (hashed_password, session['user_id']))
+            conn.commit()
+            flash('Password changed successfully!', 'success')
+            
+        conn.close()
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"{getattr(form, field).label.text}: {error}", 'error')
+    return redirect(url_for('profile'))
 
 @app.route('/')
 @login_required
@@ -383,6 +448,26 @@ def predict_batch():
 def download_file(filename):
     # TODO: Download batch results
     return f"Download {filename} Stub"
+
+@app.route('/profile/delete', methods=['POST'])
+@login_required
+def delete_account():
+    conn = get_db_connection(app.config['DATABASE_PATH'])
+    cursor = conn.cursor()
+    
+    # Delete all tasks associated with the user
+    cursor.execute("DELETE FROM Tasks WHERE user_id = ?", (session['user_id'],))
+    
+    # Delete the user account
+    cursor.execute("DELETE FROM Users WHERE user_id = ?", (session['user_id'],))
+    
+    conn.commit()
+    conn.close()
+    
+    # Clear the session
+    session.clear()
+    flash('Your account and all associated data have been permanently deleted.', 'success')
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     # Initialize the database if it hasn't been already

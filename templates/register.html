@@ -1,33 +1,45 @@
 {% extends "base.html" %}
 
-{% block content %}
-<div class="row justify-content-center align-items-center" style="min-height: 75vh;">
-    <div class="col-md-5 col-lg-4">
-        <div class="card-custom tilt-card p-5 fade-in-up">
-            <div class="text-center mb-4">
-                <h3 class="text-white fw-bold mb-1">Create Account</h3>
-                <p class="text-muted-custom small">Start prioritizing your tasks today</p>
+{% block auth_content %}
+<div class="auth-layout">
+    <div class="auth-brand">
+        <h1 class="text-white fw-bold mb-3 d-flex align-items-center gap-3">
+            <i data-lucide="layers" class="text-sage" style="width: 48px; height: 48px;"></i> STPP
+        </h1>
+        <h2 class="text-offwhite fw-medium mb-4" style="font-size: 2.5rem; line-height: 1.2;">
+            Start <span class="text-sage">Prioritizing</span><br>Today.
+        </h2>
+        <p class="text-muted fs-5 mb-5" style="max-width: 400px;">
+            Join STPP and let our intelligent engine assess what deserves your attention first.
+        </p>
+    </div>
+    
+    <div class="auth-form-container">
+        <div class="auth-form-wrapper">
+            <div class="mb-5">
+                <h3 class="text-white fw-bold mb-2">Create Account</h3>
+                <p class="text-muted">Register to start managing your tasks.</p>
             </div>
             
             <form action="{{ url_for('register') }}" method="POST">
-                <div class="mb-3">
+                <div class="mb-4">
                     <label for="name" class="form-label">Full Name</label>
-                    <input type="text" class="form-control form-control-custom" id="name" name="name" placeholder="John Doe" required>
+                    <input type="text" class="form-control" id="name" name="name" placeholder="John Doe" required>
                 </div>
-                <div class="mb-3">
+                <div class="mb-4">
                     <label for="email" class="form-label">Email address</label>
-                    <input type="email" class="form-control form-control-custom" id="email" name="email" placeholder="name@example.com" required>
+                    <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com" required>
                 </div>
                 <div class="mb-4">
                     <label for="password" class="form-label">Password</label>
-                    <input type="password" class="form-control form-control-custom" id="password" name="password" placeholder="••••••••" required>
+                    <input type="password" class="form-control" id="password" name="password" placeholder="••••••••" required>
                 </div>
                 
-                <div class="d-grid mb-3">
-                    <button type="submit" class="btn btn-primary-custom py-2">Sign Up</button>
+                <div class="d-grid mt-5 mb-4">
+                    <button type="submit" class="btn btn-primary py-2 fs-6">Sign Up</button>
                 </div>
                 
-                <div class="text-center mt-4 text-offwhite small">
+                <div class="text-center text-muted" style="font-size: 0.9rem;">
                     Already have an account? <a href="{{ url_for('login') }}" class="text-softblue text-decoration-none fw-medium">Sign in</a>
                 </div>
             </form>

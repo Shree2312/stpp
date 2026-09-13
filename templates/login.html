@@ -1,32 +1,56 @@
 {% extends "base.html" %}
 
-{% block content %}
-<div class="row justify-content-center align-items-center" style="min-height: 75vh;">
-    <div class="col-md-5 col-lg-4">
-        <div class="card-custom tilt-card p-5 fade-in-up">
-            <div class="text-center mb-4">
-                <h3 class="text-white fw-bold mb-1">Welcome Back</h3>
-                <p class="text-muted-custom small">Sign in to manage your tasks</p>
+{% block auth_content %}
+<div class="auth-layout">
+    <div class="auth-brand">
+        <h1 class="text-white fw-bold mb-3 d-flex align-items-center gap-3">
+            <i data-lucide="layers" class="text-sage" style="width: 48px; height: 48px;"></i> STPP
+        </h1>
+        <h2 class="text-offwhite fw-medium mb-4" style="font-size: 2.5rem; line-height: 1.2;">
+            Turn Tasks <br>Into <span class="text-softblue">Progress.</span>
+        </h2>
+        <p class="text-muted fs-5 mb-5" style="max-width: 400px;">
+            Prioritize what matters. Focus on what drives impact.
+        </p>
+        
+        <div class="d-flex flex-column gap-3 text-body">
+            <div class="d-flex align-items-center gap-3">
+                <i data-lucide="brain" class="text-sage"></i> AI-assisted prioritization
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <i data-lucide="check-circle-2" class="text-sage"></i> Stay organized
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <i data-lucide="zap" class="text-sage"></i> Be more productive
+            </div>
+        </div>
+    </div>
+    
+    <div class="auth-form-container">
+        <div class="auth-form-wrapper">
+            <div class="mb-5">
+                <h3 class="text-white fw-bold mb-2">Welcome Back</h3>
+                <p class="text-muted">Sign in to continue to STPP.</p>
             </div>
             
             <form action="{{ url_for('login') }}" method="POST">
-                <div class="mb-3">
+                <div class="mb-4">
                     <label for="email" class="form-label">Email address</label>
-                    <input type="email" class="form-control form-control-custom" id="email" name="email" placeholder="name@example.com" required>
+                    <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com" required>
                 </div>
                 <div class="mb-4">
                     <label for="password" class="form-label d-flex justify-content-between">
                         Password
-                        <a href="#" class="text-softblue text-decoration-none small">Forgot?</a>
+                        <a href="#" class="text-softblue text-decoration-none" style="font-size: 0.85rem;">Forgot?</a>
                     </label>
-                    <input type="password" class="form-control form-control-custom" id="password" name="password" placeholder="••••••••" required>
+                    <input type="password" class="form-control" id="password" name="password" placeholder="••••••••" required>
                 </div>
                 
-                <div class="d-grid mb-3">
-                    <button type="submit" class="btn btn-primary-custom py-2">Sign In</button>
+                <div class="d-grid mt-5 mb-4">
+                    <button type="submit" class="btn btn-primary py-2 fs-6">Sign In</button>
                 </div>
                 
-                <div class="text-center mt-4 text-offwhite small">
+                <div class="text-center text-muted" style="font-size: 0.9rem;">
                     Don't have an account? <a href="{{ url_for('register') }}" class="text-softblue text-decoration-none fw-medium">Create one</a>
                 </div>
             </form>
