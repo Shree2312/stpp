@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-white m-0">My Tasks</h2>
+    <a href="{{ url_for('create_task') }}" class="btn btn-primary-custom">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg me-1" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
+        </svg>
+        New Task
+    </a>
+</div>
+
+<div class="card-custom overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-custom mb-0">
+            <thead>
+                <tr>
+                    <th scope="col" class="ps-4">Title</th>
+                    <th scope="col">Deadline</th>
+                    <th scope="col">Effort (hrs)</th>
+                    <th scope="col">Predicted Priority</th>
+                    <th scope="col" class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if tasks %}
+                    {% for task in tasks %}
+                    <tr>
+                        <td class="ps-4 text-white fw-medium">{{ task.title }}</td>
+                        <td class="text-offwhite">{{ task.deadline }}</td>
+                        <td class="text-offwhite">{{ task.estimated_effort }}</td>
+                        <td>
+                            <span class="badge badge-{{ task.priority|lower }} rounded-pill px-3 py-2">
+                                {{ task.priority }}
+                            </span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{{ url_for('view_task', id=task.task_id) }}" class="btn btn-sm btn-outline-sage me-2">View</a>
+                            <a href="{{ url_for('edit_task', id=task.task_id) }}" class="btn btn-sm btn-outline-secondary text-offwhite border-custom hover-white me-2">Edit</a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="openDeleteOverlay('{{ task.task_id }}', '{{ task.title | replace("'", "\\'") | replace('"', '\\"') }}')">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+
+
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted-custom">
+                            <p class="mb-2">No tasks found.</p>
+                            <a href="{{ url_for('create_task') }}" class="text-softblue text-decoration-none">Create your first task</a>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if tasks %}
+<!-- Custom Dynamic Delete Overlay -->
+<div class="stpp-overlay" id="dynamicDeleteOverlay">
+    <div class="stpp-action-card">
+        <div class="stpp-card-header">
+            <h4>Delete Task</h4>
+            <button type="button" class="stpp-btn-close" onclick="closeDeleteOverlay()">&times;</button>
+        </div>
+        <div class="stpp-card-body">
+            Are you sure you want to delete the task <strong id="deleteTaskTitle"></strong>? This action cannot be undone.
+        </div>
+        <div class="stpp-card-footer">
+            <button type="button" class="btn btn-outline-secondary text-offwhite border-custom" onclick="closeDeleteOverlay()">Cancel</button>
+            <form id="dynamicDeleteForm" method="POST" class="d-inline m-0">
+                <button type="submit" class="btn btn-danger">Confirm Delete</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openDeleteOverlay(taskId, taskTitle) {
+        document.getElementById('deleteTaskTitle').innerText = '"' + taskTitle + '"';
+        
+        // Dynamically set form action URL based on taskId
+        // Since we are inside a static JS block, we construct the URL manually or use a base template string
+        const baseUrl = "{{ url_for('delete_task', id=0) }}".replace('0', taskId);
+        document.getElementById('dynamicDeleteForm').action = baseUrl;
+        
+        document.getElementById('dynamicDeleteOverlay').classList.add('active');
+    }
+    
+    function closeDeleteOverlay() {
+        document.getElementById('dynamicDeleteOverlay').classList.remove('active');
+    }
+    
+    // Close on clicking outside the card
+    document.querySelectorAll('.stpp-overlay').forEach(overlay => {
+        overlay.addEventListener('click', function(e) {
+            if(e.target === this) {
+                this.classList.remove('active');
+            }
+        });
+    });
+</script>
+{% endblock %}

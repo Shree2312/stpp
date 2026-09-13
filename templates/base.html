@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STPP - Smart Task Priority Predictor</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/styles.css') }}?v=2" rel="stylesheet">
+</head>
+<body class="d-flex flex-column min-vh-100-custom">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-layers-half me-2" viewBox="0 0 16 16">
+                    <path d="M8.235 1.559a.5.5 0 0 0-.47 0l-7.5 4a.5.5 0 0 0 0 .882L3.188 8 .264 9.559a.5.5 0 0 0 0 .882l7.5 4a.5.5 0 0 0 .47 0l7.5-4a.5.5 0 0 0 0-.882L12.813 8l2.922-1.559a.5.5 0 0 0 0-.882l-7.5-4zM8 9.433 1.562 6 8 2.567 14.438 6 8 9.433z"/>
+                </svg>
+                STPP
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('tasks_list') }}">Tasks</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('create_task') }}">New Task</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto align-items-center">
+                    {% if session.get('user_id') %}
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" href="{{ url_for('profile') }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-person-circle me-1" viewBox="0 0 16 16">
+                                    <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+                                    <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
+                                </svg>
+                                Profile
+                            </a>
+                        </li>
+                        <li class="nav-item ms-2">
+                            <a class="nav-link text-danger" href="{{ url_for('logout') }}">Logout</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                        </li>
+                        <li class="nav-item ms-2">
+                            <a class="btn btn-sm btn-outline-sage px-3" href="{{ url_for('register') }}">Sign Up</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow-1 container py-5 fade-in-up">
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert" style="background-color: var(--surface); border-color: var(--border); color: var(--text-offwhite);">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="filter: invert(1);"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto py-3 text-center" style="background-color: var(--surface); border-top: 1px solid var(--border);">
+        <p class="mb-0 text-muted-custom small">&copy; 2026 STPP Team. Built for efficiency.</p>
+    </footer>
+
+    <!-- Rolling Calendar Modal -->
+    <div class="modal fade" id="rollingCalendarModal" tabindex="-1" aria-labelledby="rollingCalendarModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark-surface border-custom">
+                <div class="modal-header border-custom py-2">
+                    <button type="button" class="btn text-muted-custom" data-bs-dismiss="modal">Cancel</button>
+                    <h6 class="modal-title text-white m-0" id="rollingCalendarModalLabel">Select Date</h6>
+                    <button type="button" class="btn text-softblue fw-bold" id="confirmDateBtn">Done</button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="rolling-calendar-container">
+                        <div class="rolling-fade-top"></div>
+                        <div class="rolling-fade-bottom"></div>
+                        <div class="rolling-highlight"></div>
+                        
+                        <div class="rolling-col" id="colMonth">
+                            <!-- Populated by JS -->
+                        </div>
+                        <div class="rolling-col" id="colDate">
+                            <!-- Populated by JS -->
+                        </div>
+                        <div class="rolling-col" id="colYear">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom Rolling Calendar Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            
+            // Allow range from today's year up to 2030 (or +5 years)
+            const minYear = Math.max(2026, currentYear);
+            const maxYear = 2030;
+            
+            let activeInput = null;
+            let calendarModal = new bootstrap.Modal(document.getElementById('rollingCalendarModal'));
+            
+            const colMonth = document.getElementById('colMonth');
+            const colDate = document.getElementById('colDate');
+            const colYear = document.getElementById('colYear');
+            
+            // Populate Year
+            colYear.innerHTML = '';
+            for(let y = minYear; y <= maxYear; y++) {
+                colYear.innerHTML += `<div class="rolling-item" data-val="${y}">${y}</div>`;
+            }
+            
+            // Populate Month
+            colMonth.innerHTML = '';
+            months.forEach((m, idx) => {
+                colMonth.innerHTML += `<div class="rolling-item" data-val="${idx}">${m}</div>`;
+            });
+            
+            // Populate Date (1-31, will be adjusted dynamically)
+            function populateDates(year, month) {
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                colDate.innerHTML = '';
+                for(let d = 1; d <= daysInMonth; d++) {
+                    colDate.innerHTML += `<div class="rolling-item" data-val="${d}">${d}</div>`;
+                }
+                disablePastDates();
+            }
+            
+            // Helper to get active item based on scroll position
+            function updateActiveItem(col) {
+                const items = col.querySelectorAll('.rolling-item');
+                const center = col.scrollTop + (col.clientHeight / 2);
+                let closest = null;
+                let minDiff = Infinity;
+                
+                items.forEach(item => {
+                    const itemCenter = item.offsetTop + (item.clientHeight / 2);
+                    const diff = Math.abs(center - itemCenter);
+                    if(diff < minDiff) {
+                        minDiff = diff;
+                        closest = item;
+                    }
+                });
+                
+                items.forEach(i => i.classList.remove('active'));
+                if(closest) closest.classList.add('active');
+                
+                // If month or year changed, adjust dates
+                if(col === colMonth || col === colYear) {
+                    const selYear = getSelectedValue(colYear);
+                    const selMonth = getSelectedValue(colMonth);
+                    if(selYear !== null && selMonth !== null) {
+                        const currentSelDate = getSelectedValue(colDate);
+                        populateDates(selYear, selMonth);
+                        scrollToValue(colDate, currentSelDate || 1);
+                    }
+                }
+                
+                disablePastDates();
+            }
+            
+            function getSelectedValue(col) {
+                const active = col.querySelector('.rolling-item.active');
+                return active ? parseInt(active.getAttribute('data-val')) : null;
+            }
+            
+            function scrollToValue(col, val) {
+                const items = Array.from(col.querySelectorAll('.rolling-item'));
+                let target = items.find(i => parseInt(i.getAttribute('data-val')) === val);
+                if(!target && items.length > 0) target = items[items.length - 1]; // fallback to last day
+                
+                if(target) {
+                    const centerOffset = (col.clientHeight / 2) - (target.clientHeight / 2);
+                    col.scrollTo({ top: target.offsetTop - centerOffset, behavior: 'smooth' });
+                    items.forEach(i => i.classList.remove('active'));
+                    target.classList.add('active');
+                }
+            }
+            
+            function disablePastDates() {
+                const sy = getSelectedValue(colYear);
+                const sm = getSelectedValue(colMonth);
+                
+                const ty = today.getFullYear();
+                const tm = today.getMonth();
+                const td = today.getDate();
+                
+                // Month Column
+                colMonth.querySelectorAll('.rolling-item').forEach(m => {
+                    const val = parseInt(m.getAttribute('data-val'));
+                    if (sy === ty && val < tm) m.classList.add('disabled');
+                    else m.classList.remove('disabled');
+                });
+                
+                // Date Column
+                colDate.querySelectorAll('.rolling-item').forEach(d => {
+                    const val = parseInt(d.getAttribute('data-val'));
+                    if (sy === ty && sm === tm && val < td) d.classList.add('disabled');
+                    else d.classList.remove('disabled');
+                });
+            }
+            
+            // Attach Scroll Listeners
+            [colMonth, colDate, colYear].forEach(col => {
+                let isScrolling;
+                col.addEventListener('scroll', () => {
+                    window.clearTimeout(isScrolling);
+                    isScrolling = setTimeout(() => { updateActiveItem(col); }, 100);
+                });
+                
+                // Click to scroll
+                col.addEventListener('click', (e) => {
+                    if(e.target.classList.contains('rolling-item') && !e.target.classList.contains('disabled')) {
+                        const val = parseInt(e.target.getAttribute('data-val'));
+                        scrollToValue(col, val);
+                    }
+                });
+            });
+            
+            // Bind to inputs
+            document.querySelectorAll('.datepicker').forEach(input => {
+                input.readOnly = true;
+                input.style.cursor = 'pointer';
+                input.addEventListener('click', function() {
+                    activeInput = this;
+                    let d = new Date();
+                    if(this.value) {
+                        const parts = this.value.split('-');
+                        if(parts.length === 3) {
+                            d = new Date(parts[0], parts[1]-1, parts[2]);
+                        }
+                    }
+                    
+                    populateDates(d.getFullYear(), d.getMonth());
+                    
+                    // Show modal first to get dimensions for scroll
+                    calendarModal.show();
+                    
+                    // Delay scrolling to allow modal to render
+                    setTimeout(() => {
+                        scrollToValue(colYear, d.getFullYear());
+                        scrollToValue(colMonth, d.getMonth());
+                        scrollToValue(colDate, d.getDate());
+                    }, 200);
+                });
+            });
+            
+            // Confirm Date
+            document.getElementById('confirmDateBtn').addEventListener('click', () => {
+                let y = getSelectedValue(colYear);
+                let m = getSelectedValue(colMonth);
+                let d = getSelectedValue(colDate);
+                
+                // Validate past date
+                const selected = new Date(y, m, d);
+                const compareToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                
+                if (selected < compareToday) {
+                    y = today.getFullYear();
+                    m = today.getMonth();
+                    d = today.getDate();
+                }
+                
+                if(activeInput) {
+                    const mm = String(m + 1).padStart(2, '0');
+                    const dd = String(d).padStart(2, '0');
+                    activeInput.value = `${y}-${mm}-${dd}`;
+                }
+                calendarModal.hide();
+            });
+        });
+    </script>
+
+    <!-- Premium 3D Tilt Effect Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tiltElements = document.querySelectorAll('.tilt-card');
+            tiltElements.forEach(el => {
+                // Ensure element has relative positioning for the glare
+                if(getComputedStyle(el).position === 'static') {
+                    el.style.position = 'relative';
+                }
+                
+                el.addEventListener('mousemove', (e) => {
+                    const rect = el.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    
+                    // Increased tilt multiplier from 10 to 25
+                    const rotateX = ((y - centerY) / centerY) * -25; 
+                    const rotateY = ((x - centerX) / centerX) * 25;
+                    
+                    // Dynamic glare coordinates
+                    const glareX = (x / rect.width) * 100;
+                    const glareY = (y / rect.height) * 100;
+                    
+                    el.style.transform = `perspective(1000px) scale(1.05) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                    el.style.zIndex = '10';
+                    
+                    // Move the glow to track the mouse exactly
+                    const glow = el.querySelector('.profile-glow');
+                    if (glow) {
+                        glow.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(126, 166, 196, 0.4) 0%, transparent 70%)`;
+                    }
+                });
+                
+                el.addEventListener('mouseleave', () => {
+                    el.style.transform = `perspective(1000px) scale(1) rotateX(0deg) rotateY(0deg)`;
+                    el.style.zIndex = '1';
+                    
+                    const glow = el.querySelector('.profile-glow');
+                    if (glow) {
+                        glow.style.background = `radial-gradient(circle at center, rgba(126, 166, 196, 0.1) 0%, transparent 60%)`;
+                    }
+                });
+            });
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

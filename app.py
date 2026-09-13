@@ -1,75 +1,385 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 import os
-
+from forms import TaskForm, OverrideForm
+from database import get_db_connection
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, date
 app = Flask(__name__)
 # Secret key should be loaded from env in production, but for this internship project a simple string is fine
 app.config['SECRET_KEY'] = 'dev-internship-secret-key'
 app.config['DATABASE_PATH'] = 'task_priority.db'
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please log in to access this page.', 'error')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 # --- Auth Routes ---
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    # TODO: Implement registration logic
-    return "Registration Page Stub"
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        conn = get_db_connection(app.config['DATABASE_PATH'])
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT user_id FROM Users WHERE email = ?", (email,))
+        if cursor.fetchone():
+            flash('Email already registered.', 'error')
+            conn.close()
+            return redirect(url_for('register'))
+            
+        hashed_password = generate_password_hash(password)
+        cursor.execute("INSERT INTO Users (name, email, password) VALUES (?, ?, ?)", (name, email, hashed_password))
+        user_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        session['user_id'] = user_id
+        flash('Registration successful!', 'success')
+        return redirect(url_for('dashboard'))
+        
+    return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # TODO: Implement login logic
-    return "Login Page Stub"
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        conn = get_db_connection(app.config['DATABASE_PATH'])
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id, password FROM Users WHERE email = ?", (email,))
+        user = cursor.fetchone()
+        conn.close()
+        
+        if user and check_password_hash(user['password'], password):
+            session['user_id'] = user['user_id']
+            flash('Logged in successfully.', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid email or password.', 'error')
+            
+    return render_template('login.html')
 
 @app.route('/logout')
 def logout():
-    # TODO: Implement logout logic
-    return "Logout Stub"
+    session.pop('user_id', None)
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('login'))
 
 # --- Dashboard & Task Routes ---
+@app.route('/profile')
+@login_required
+def profile():
+    conn = get_db_connection(app.config['DATABASE_PATH'])
+    cursor = conn.cursor()
+    user_id = session['user_id']
+    
+    cursor.execute("SELECT name, email FROM Users WHERE user_id = ?", (user_id,))
+    user = cursor.fetchone()
+    
+    cursor.execute("SELECT COUNT(*) as total FROM Tasks WHERE user_id = ?", (user_id,))
+    total_tasks = cursor.fetchone()['total']
+    
+    cursor.execute("""
+        SELECT COUNT(*) as critical FROM Tasks t 
+        JOIN Predictions p ON t.task_id = p.task_id 
+        WHERE t.user_id = ? AND p.priority_label = 'Critical'
+    """, (user_id,))
+    critical_tasks = cursor.fetchone()['critical']
+    
+    conn.close()
+    
+    return render_template('profile.html', user=user, total_tasks=total_tasks, critical_tasks=critical_tasks)
+
 @app.route('/')
+@login_required
 def dashboard():
-    # TODO: Show dashboard and recent tasks
-    return "Dashboard Stub"
+    conn = get_db_connection(app.config['DATABASE_PATH'])
+    cursor = conn.cursor()
+    user_id = session['user_id']
+    
+    # Get total tasks
+    cursor.execute("SELECT COUNT(*) as count FROM Tasks WHERE user_id = ?", (user_id,))
+    total_tasks = cursor.fetchone()['count']
+    
+    # Get priority breakdown
+    cursor.execute("SELECT priority_label, COUNT(*) as count FROM Predictions p JOIN Tasks t ON p.task_id = t.task_id WHERE t.user_id = ? GROUP BY priority_label", (user_id,))
+    priority_counts = {row['priority_label']: row['count'] for row in cursor.fetchall()}
+    
+    # Get recent tasks
+    cursor.execute("""
+        SELECT t.*, p.priority_label as priority 
+        FROM Tasks t 
+        LEFT JOIN Predictions p ON t.task_id = p.task_id 
+        WHERE t.user_id = ? 
+        ORDER BY t.created_at DESC LIMIT 5
+    """, (user_id,))
+    recent_tasks = cursor.fetchall()
+    conn.close()
+    
+    return render_template('dashboard.html', total_tasks=total_tasks, priority_counts=priority_counts, recent_tasks=recent_tasks)
 
 @app.route('/tasks')
+@login_required
 def tasks_list():
-    # TODO: List all tasks for the logged in user
-    return "Tasks List Stub"
+    conn = get_db_connection(app.config['DATABASE_PATH'])
+    cursor = conn.cursor()
+    user_id = session['user_id']
+    cursor.execute("""
+        SELECT t.*, p.priority_label as priority, p.priority_score 
+        FROM Tasks t 
+        LEFT JOIN Predictions p ON t.task_id = p.task_id 
+        WHERE t.user_id = ?
+        ORDER BY t.deadline ASC
+    """, (user_id,))
+    tasks = cursor.fetchall()
+    conn.close()
+    return render_template('tasks_list.html', tasks=tasks)
+
+def calculate_priority_score(deadline_date, effort, impact, urgency, dependencies):
+    days_to_deadline = (deadline_date - date.today()).days
+    
+    if days_to_deadline < 0:
+        deadline_points = 20
+    elif days_to_deadline <= 2:
+        deadline_points = 15
+    elif days_to_deadline <= 7:
+        deadline_points = 10
+    elif days_to_deadline <= 14:
+        deadline_points = 7
+    else:
+        deadline_points = 3
+        
+    score = (impact * 4) + (urgency * 3) + (dependencies * 2) + deadline_points
+    
+    if effort < 3:
+        score += 5
+    elif effort > 20:
+        score -= 5
+        
+    score = max(0, min(100, int(score)))
+    
+    if score >= 80:
+        label = "Critical"
+    elif score >= 60:
+        label = "High"
+    elif score >= 40:
+        label = "Medium"
+    else:
+        label = "Low"
+        
+    return score, label
 
 @app.route('/tasks/create', methods=['GET', 'POST'])
+@login_required
 def create_task():
-    # TODO: Handle task creation
-    return "Create Task Stub"
+    form = TaskForm()
+    if form.validate_on_submit():
+        deadline_date = form.deadline.data
+        if deadline_date < date.today():
+            flash('Deadline cannot be in the past.', 'error')
+            return render_template('task_create.html', form=form)
+            
+        user_id = session['user_id']
+        conn = get_db_connection(app.config['DATABASE_PATH'])
+        cursor = conn.cursor()
+            
+        cursor.execute("""
+            INSERT INTO Tasks (user_id, title, description, deadline, estimated_effort, business_impact, urgency, dependency_count, task_type, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            user_id, form.title.data, form.description.data, deadline_date.strftime('%Y-%m-%d'),
+            form.estimated_effort.data, form.business_impact.data, form.urgency.data, form.dependencies.data,
+            'General', 'Pending'
+        ))
+        
+        task_id = cursor.lastrowid
+        
+        score, label = calculate_priority_score(
+            deadline_date, 
+            form.estimated_effort.data, 
+            form.business_impact.data, 
+            form.urgency.data, 
+            form.dependencies.data
+        )
+        
+        cursor.execute("""
+            INSERT INTO Predictions (task_id, priority_score, priority_label, model_prediction)
+            VALUES (?, ?, ?, ?)
+        """, (task_id, score, label, label))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Task created successfully!', 'success')
+        return redirect(url_for('tasks_list'))
+    return render_template('task_create.html', form=form)
 
 @app.route('/tasks/<int:id>')
+@login_required
 def view_task(id):
-    # TODO: View task details
-    return f"View Task Stub for Task {id}"
+    conn = get_db_connection(app.config['DATABASE_PATH'])
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT t.*, p.priority_label as priority, p.priority_score 
+        FROM Tasks t 
+        LEFT JOIN Predictions p ON t.task_id = p.task_id 
+        WHERE t.task_id = ? AND t.user_id = ?
+    """, (id, session['user_id']))
+    task = cursor.fetchone()
+    conn.close()
+    
+    if not task:
+        flash("Task not found.", "error")
+        return redirect(url_for('tasks_list'))
+        
+    override_form = OverrideForm()
+    return render_template('task_detail.html', task=task, override_form=override_form)
 
 @app.route('/tasks/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_task(id):
-    # TODO: Edit task details
-    return f"Edit Task Stub for Task {id}"
+    conn = get_db_connection(app.config['DATABASE_PATH'])
+    cursor = conn.cursor()
+    
+    form = TaskForm()
+    if request.method == 'GET':
+        cursor.execute("SELECT * FROM Tasks WHERE task_id = ? AND user_id = ?", (id, session['user_id']))
+        task = cursor.fetchone()
+        if not task:
+            flash("Task not found or permission denied.", "error")
+            conn.close()
+            return redirect(url_for('tasks_list'))
+            
+        form.title.data = task['title']
+        form.description.data = task['description']
+        
+        # Convert date string to datetime.date
+        from datetime import datetime
+        form.deadline.data = datetime.strptime(task['deadline'], '%Y-%m-%d').date()
+        
+        form.estimated_effort.data = task['estimated_effort']
+        form.urgency.data = task['urgency']
+        form.business_impact.data = task['business_impact']
+        form.dependencies.data = task['dependency_count']
+        
+    if form.validate_on_submit():
+        deadline_date = form.deadline.data
+        if deadline_date < date.today():
+            flash('Deadline cannot be in the past.', 'error')
+            conn.close()
+            return render_template('task_edit.html', form=form, task_id=id)
+            
+        cursor.execute("""
+            UPDATE Tasks SET 
+                title=?, description=?, deadline=?, estimated_effort=?, 
+                business_impact=?, urgency=?, dependency_count=?
+            WHERE task_id=? AND user_id=?
+        """, (
+            form.title.data, form.description.data, deadline_date.strftime('%Y-%m-%d'),
+            form.estimated_effort.data, form.business_impact.data, form.urgency.data, 
+            form.dependencies.data, id, session['user_id']
+        ))
+        
+        if cursor.rowcount == 0:
+            flash("Task not found or permission denied.", "error")
+            conn.close()
+            return redirect(url_for('tasks_list'))
+        
+        score, label = calculate_priority_score(
+            deadline_date, 
+            form.estimated_effort.data, 
+            form.business_impact.data, 
+            form.urgency.data, 
+            form.dependencies.data
+        )
+        
+        cursor.execute("""
+            UPDATE Predictions SET priority_score=?, priority_label=?, model_prediction=?
+            WHERE task_id=?
+        """, (score, label, label, id))
+        
+        conn.commit()
+        conn.close()
+        flash('Task updated successfully!', 'success')
+        return redirect(url_for('view_task', id=id))
+    
+    conn.close()
+    return render_template('task_edit.html', form=form, task_id=id)
 
 @app.route('/tasks/<int:id>/delete', methods=['POST'])
+@login_required
 def delete_task(id):
-    # TODO: Delete task
-    return f"Delete Task Stub for Task {id}"
+    conn = get_db_connection(app.config['DATABASE_PATH'])
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM Tasks WHERE task_id=? AND user_id=?", (id, session['user_id']))
+    if cursor.rowcount > 0:
+        cursor.execute("DELETE FROM Predictions WHERE task_id=?", (id,))
+        flash('Task deleted successfully!', 'success')
+    else:
+        flash("Task not found or permission denied.", "error")
+    conn.commit()
+    conn.close()
+    return redirect(url_for('tasks_list'))
 
 @app.route('/tasks/<int:id>/override', methods=['POST'])
+@login_required
 def override_priority(id):
-    # TODO: Override task priority
-    return f"Override Priority Stub for Task {id}"
+    override_form = OverrideForm()
+    if override_form.validate_on_submit():
+        conn = get_db_connection(app.config['DATABASE_PATH'])
+        cursor = conn.cursor()
+        
+        new_priority = override_form.new_priority.data
+        reason = override_form.reason.data
+        
+        cursor.execute("SELECT task_id FROM Tasks WHERE task_id=? AND user_id=?", (id, session['user_id']))
+        if not cursor.fetchone():
+            flash("Task not found or permission denied.", "error")
+            conn.close()
+            return redirect(url_for('tasks_list'))
+            
+        cursor.execute("SELECT priority_label FROM Predictions WHERE task_id=?", (id,))
+        old_priority = cursor.fetchone()['priority_label']
+        
+        cursor.execute("UPDATE Predictions SET priority_label=? WHERE task_id=?", (new_priority, id))
+        cursor.execute("""
+            INSERT INTO OverrideHistory (task_id, original_priority, new_priority, reason) 
+            VALUES (?, ?, ?, ?)
+        """, (id, old_priority, new_priority, reason))
+        
+        conn.commit()
+        conn.close()
+        
+        flash(f"Priority overridden to {new_priority}", 'success')
+    else:
+        flash("Failed to override priority.", 'error')
+    return redirect(url_for('view_task', id=id))
 
 # --- Prediction Routes ---
 @app.route('/predict', methods=['POST'])
+@login_required
 def predict():
     # TODO: Single task prediction
     return "Prediction Stub"
 
 @app.route('/predict/batch', methods=['POST'])
+@login_required
 def predict_batch():
     # TODO: CSV batch prediction
     return "Batch Prediction Stub"
 
 @app.route('/download/<filename>')
+@login_required
 def download_file(filename):
     # TODO: Download batch results
     return f"Download {filename} Stub"

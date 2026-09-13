@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 75vh;">
+    <div class="col-md-5 col-lg-4">
+        <div class="card-custom tilt-card p-5 fade-in-up">
+            <div class="text-center mb-4">
+                <h3 class="text-white fw-bold mb-1">Welcome Back</h3>
+                <p class="text-muted-custom small">Sign in to manage your tasks</p>
+            </div>
+            
+            <form action="{{ url_for('login') }}" method="POST">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email address</label>
+                    <input type="email" class="form-control form-control-custom" id="email" name="email" placeholder="name@example.com" required>
+                </div>
+                <div class="mb-4">
+                    <label for="password" class="form-label d-flex justify-content-between">
+                        Password
+                        <a href="#" class="text-softblue text-decoration-none small">Forgot?</a>
+                    </label>
+                    <input type="password" class="form-control form-control-custom" id="password" name="password" placeholder="••••••••" required>
+                </div>
+                
+                <div class="d-grid mb-3">
+                    <button type="submit" class="btn btn-primary-custom py-2">Sign In</button>
+                </div>
+                
+                <div class="text-center mt-4 text-offwhite small">
+                    Don't have an account? <a href="{{ url_for('register') }}" class="text-softblue text-decoration-none fw-medium">Create one</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

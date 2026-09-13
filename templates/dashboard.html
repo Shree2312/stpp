@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-white m-0">Dashboard Overview</h2>
+    <a href="{{ url_for('create_task') }}" class="btn btn-primary-custom">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg me-1" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
+        </svg>
+        New Task
+    </a>
+</div>
+
+<div class="row g-4 mb-5">
+    <!-- Total Tasks Card -->
+    <div class="col-md-3">
+        <div class="card-custom tilt-card p-4 text-center h-100">
+            <div class="text-muted-custom mb-2">Total Tasks</div>
+            <div class="display-4 text-white fw-bold">{{ total_tasks }}</div>
+        </div>
+    </div>
+    
+    <!-- Priority Breakdown Cards -->
+    <div class="col-md-9">
+        <div class="row g-4 h-100">
+            <div class="col-sm-3">
+                <div class="card-custom tilt-card p-4 text-center h-100" style="border-top: 3px solid #ff6b6b;">
+                    <div class="text-muted-custom mb-2">Critical</div>
+                    <div class="fs-2 text-white">{{ priority_counts.get('Critical', 0) }}</div>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="card-custom tilt-card p-4 text-center h-100" style="border-top: 3px solid #ffa94d;">
+                    <div class="text-muted-custom mb-2">High</div>
+                    <div class="fs-2 text-white">{{ priority_counts.get('High', 0) }}</div>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="card-custom tilt-card p-4 text-center h-100" style="border-top: 3px solid var(--accent-sage);">
+                    <div class="text-muted-custom mb-2">Medium</div>
+                    <div class="fs-2 text-white">{{ priority_counts.get('Medium', 0) }}</div>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="card-custom tilt-card p-4 text-center h-100" style="border-top: 3px solid var(--accent-softblue);">
+                    <div class="text-muted-custom mb-2">Low</div>
+                    <div class="fs-2 text-white">{{ priority_counts.get('Low', 0) }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h4 class="text-white mb-3">Recently Added Tasks</h4>
+<div class="card-custom overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-custom mb-0">
+            <thead>
+                <tr>
+                    <th scope="col" class="ps-4">Title</th>
+                    <th scope="col">Deadline</th>
+                    <th scope="col">Predicted Priority</th>
+                    <th scope="col" class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if recent_tasks %}
+                    {% for task in recent_tasks %}
+                    <tr>
+                        <td class="ps-4 text-white fw-medium">{{ task.title }}</td>
+                        <td class="text-offwhite">{{ task.deadline }}</td>
+                        <td>
+                            <span class="badge badge-{{ task.priority|lower }} rounded-pill px-3 py-2">
+                                {{ task.priority }}
+                            </span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{{ url_for('view_task', id=task.task_id) }}" class="btn btn-sm btn-outline-sage">View Details</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted-custom">
+                            <p class="mb-2">No tasks added yet.</p>
+                            <a href="{{ url_for('create_task') }}" class="text-softblue text-decoration-none">Create your first task</a>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
