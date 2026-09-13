@@ -1,14 +1,14 @@
 # Project Status
-- Current Phase: Phase 5 (Data Cleaning) & Phase 7 (ML Training)
+- Current Phase: Phase 7 (ML Integration & Validation)
 - Overall Status: IN_PROGRESS
 - Architecture Status: IMPLEMENTED
 - Backend Status: IMPLEMENTED
 - Frontend Status: IMPLEMENTED
 - Database/authentication Status: IMPLEMENTED
-- Dataset Status: GENERATED (Raw Data) / PENDING (Cleaning)
-- ML Status: NOT_STARTED
+- Dataset Status: GENERATED / CLEANED
+- ML Status: Phase 1 (Training) - COMPLETED by Shraavya. Phase 2 (Integration) - PENDING for Sirisha.
 - Testing Status: NOT_STARTED
 - Documentation Status: IN_PROGRESS
 - Known Issues: None
 - Blocked Work: None
-- Next Milestones: Data cleaning and Model Training (Sirisha & Shraavya).
+- Next Milestones: ML Integration and Evaluation (Sirisha).

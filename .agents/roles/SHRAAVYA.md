@@ -1,4 +1,5 @@
 # Role: Shraavya
-Role: Machine Learning and Feature Engineering - Collaborator
-Primary Responsibilities: EDA collaboration, Data cleaning collaboration, Feature engineering, Preprocessing, Model experimentation within SRS scope, Decision Tree support, Evaluation support, ML debugging, Model integration support.
-Important Boundary: Works with Sirisha on the ML pipeline. Both should understand the complete ML workflow rather than splitting the ML pipeline into isolated black boxes.
+Role: Machine Learning Pipeline Owner (Phase 1)
+Status: COMPLETED
+Primary Responsibilities: Exploratory Data Analysis (EDA), Dataset understanding, Data cleaning, Data validation, Feature engineering (e.g., Days-to-deadline), Categorical encoding, Building preprocessing pipeline, Train/test preparation, and Decision Tree training.
+Important Boundary: Shraavya owns the upstream ML pipeline and hands off the trained model and preprocessor artifacts to Sirisha. This phase of work is COMPLETE.
