@@ -2,6 +2,7 @@ import pytest
 import os
 import sys
 import sqlite3
+import joblib
 from datetime import date, timedelta
 
 # Ensure parent directory is in sys.path
@@ -186,3 +187,136 @@ def test_predict_endpoint_invalid_inputs(client):
     data = response.get_json()
     assert data['status'] == 'error'
     assert 'message' in data
+
+
+def test_model_singleton_caching():
+    """Verify joblib.load is called exactly once across multiple predictions."""
+    from unittest.mock import patch
+    from prediction import clear_model_cache, predict_priority
+
+    clear_model_cache()
+
+    with patch('joblib.load', wraps=joblib.load) as mock_load:
+        for _ in range(10):
+            res = predict_priority(
+                days_to_deadline=5,
+                estimated_effort=4.0,
+                business_impact=7,
+                urgency=8,
+                dependency_count=1,
+                task_type='General'
+            )
+            assert res in ['Low', 'Medium', 'High', 'Critical']
+
+        # Assert joblib.load was called ONLY once despite 10 prediction calls
+        assert mock_load.call_count == 1
+
+
+def test_predict_priority_batch():
+    """Verify vectorized batch prediction works efficiently for multiple rows."""
+    import pandas as pd
+    from prediction import predict_priority_batch, predict_priority
+
+    df_tasks = pd.DataFrame([
+        {
+            "days_to_deadline": 1,
+            "estimated_effort": 10.0,
+            "business_impact": 10,
+            "urgency": 10,
+            "dependency_count": 3,
+            "task_type": "Bug"
+        },
+        {
+            "days_to_deadline": 15,
+            "estimated_effort": 2.0,
+            "business_impact": 2,
+            "urgency": 2,
+            "dependency_count": 0,
+            "task_type": "General"
+        }
+    ])
+
+    batch_preds = predict_priority_batch(df_tasks)
+    assert len(batch_preds) == 2
+
+    # Verify batch results match individual predictions
+    single_pred_1 = predict_priority(1, 10.0, 10, 10, 3, "Bug")
+    single_pred_2 = predict_priority(15, 2.0, 2, 2, 0, "General")
+
+    assert batch_preds[0] == single_pred_1
+    assert batch_preds[1] == single_pred_2
+
+
+def test_batch_prediction_route_get(client):
+    """Test GET /predict/batch renders batch upload template."""
+    response = client.get('/predict/batch')
+    assert response.status_code == 200
+    assert b'CSV Batch Prediction' in response.data
+
+
+def test_download_sample_csv_endpoint(client):
+    """Test downloading the sample CSV template."""
+    response = client.get('/predict/sample-csv')
+    assert response.status_code == 200
+    assert response.mimetype == 'text/csv'
+    assert b'title,deadline,urgency' in response.data
+
+
+def test_batch_prediction_route_post_valid_csv(client):
+    """Test POST /predict/batch with valid CSV file."""
+    import io
+    csv_data = (
+        "title,deadline,urgency,business_impact,estimated_effort,dependency_count,task_type\n"
+        "Critical Fix,2026-09-18,9,9,4.0,1,Bug\n"
+        "Doc Task,2026-09-30,2,3,1.0,0,Documentation\n"
+    )
+    data = {
+        'file': (io.BytesIO(csv_data.encode('utf-8')), 'test_tasks.csv')
+    }
+    response = client.post('/predict/batch', data=data, content_type='multipart/form-data')
+    assert response.status_code == 200
+    assert b'Batch Processing Results' in response.data
+    assert b'Critical Fix' in response.data
+    assert b'Download Results CSV' in response.data
+
+
+def test_batch_prediction_route_post_over_500_rows(client):
+    """Test POST /predict/batch enforces max 500 rows limit."""
+    import io
+    lines = ["title,deadline,urgency,business_impact,estimated_effort,dependency_count,task_type\n"]
+    for i in range(501):
+        lines.append(f"Task {i},2026-09-20,5,5,2.0,0,General\n")
+    csv_data = "".join(lines)
+
+    data = {
+        'file': (io.BytesIO(csv_data.encode('utf-8')), 'too_many_tasks.csv')
+    }
+    response = client.post('/predict/batch', data=data, content_type='multipart/form-data', follow_redirects=True)
+    assert response.status_code == 200
+    assert b'CSV exceeds maximum limit of 500 tasks' in response.data
+
+
+def test_batch_prediction_route_invalid_rows_report(client):
+    """Test POST /predict/batch identifies and reports invalid rows."""
+    import io
+    csv_data = (
+        "title,deadline,urgency,business_impact,estimated_effort,dependency_count,task_type\n"
+        "Valid Task,2026-09-20,5,5,2.0,0,General\n"
+        "Bad Date Task,not-a-date,5,5,2.0,0,General\n"
+        "Bad Urgency Task,2026-09-20,99,5,2.0,0,General\n"
+    )
+    data = {
+        'file': (io.BytesIO(csv_data.encode('utf-8')), 'mixed_tasks.csv')
+    }
+    response = client.post('/predict/batch', data=data, content_type='multipart/form-data')
+    assert response.status_code == 200
+    assert b'Invalid Rows Identified' in response.data
+    assert b'Bad Date Task' in response.data
+    assert b'Bad Urgency Task' in response.data
+
+
+def test_download_file_path_traversal_prevention(client):
+    """Test GET /download/<filename> handles safe downloads and blocks path traversal."""
+    response = client.get('/download/..%2Fapp.py', follow_redirects=True)
+    assert response.status_code in [404, 400, 302]
+
