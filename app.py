@@ -5,6 +5,7 @@ from database import get_db_connection
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, date
+from prediction import predict_priority
 app = Flask(__name__)
 # Secret key should be loaded from env in production, but for this internship project a simple string is fine
 app.config['SECRET_KEY'] = 'dev-internship-secret-key'
@@ -277,10 +278,24 @@ def create_task():
             form.dependencies.data
         )
         
+        days_to_deadline = (deadline_date - date.today()).days
+        try:
+            ml_pred = predict_priority(
+                days_to_deadline=days_to_deadline,
+                estimated_effort=form.estimated_effort.data,
+                business_impact=form.business_impact.data,
+                urgency=form.urgency.data,
+                dependency_count=form.dependencies.data,
+                task_type='General'
+            )
+            ml_prediction = str(ml_pred)
+        except Exception:
+            ml_prediction = label
+
         cursor.execute("""
             INSERT INTO Predictions (task_id, priority_score, priority_label, model_prediction)
             VALUES (?, ?, ?, ?)
-        """, (task_id, score, label, label))
+        """, (task_id, score, label, ml_prediction))
         
         conn.commit()
         conn.close()
@@ -368,10 +383,24 @@ def edit_task(id):
             form.dependencies.data
         )
         
+        days_to_deadline = (deadline_date - date.today()).days
+        try:
+            ml_pred = predict_priority(
+                days_to_deadline=days_to_deadline,
+                estimated_effort=form.estimated_effort.data,
+                business_impact=form.business_impact.data,
+                urgency=form.urgency.data,
+                dependency_count=form.dependencies.data,
+                task_type='General'
+            )
+            ml_prediction = str(ml_pred)
+        except Exception:
+            ml_prediction = label
+
         cursor.execute("""
             UPDATE Predictions SET priority_score=?, priority_label=?, model_prediction=?
             WHERE task_id=?
-        """, (score, label, label, id))
+        """, (score, label, ml_prediction, id))
         
         conn.commit()
         conn.close()
@@ -434,8 +463,46 @@ def override_priority(id):
 @app.route('/predict', methods=['POST'])
 @login_required
 def predict():
-    # TODO: Single task prediction
-    return "Prediction Stub"
+    data = request.get_json(silent=True) or request.form
+    try:
+        if 'deadline' in data:
+            d_val = data['deadline']
+            if isinstance(d_val, str):
+                deadline_date = datetime.strptime(d_val, '%Y-%m-%d').date()
+            else:
+                deadline_date = d_val
+            days_to_deadline = (deadline_date - date.today()).days
+        else:
+            days_to_deadline = int(data.get('days_to_deadline', 7))
+
+        estimated_effort = float(data.get('estimated_effort', 1.0))
+        business_impact = int(data.get('business_impact', 5))
+        urgency = int(data.get('urgency', 5))
+        dependency_count = int(data.get('dependency_count', 0))
+        task_type = data.get('task_type', 'General')
+
+        prediction = predict_priority(
+            days_to_deadline,
+            estimated_effort,
+            business_impact,
+            urgency,
+            dependency_count,
+            task_type
+        )
+        return jsonify({
+            "status": "success",
+            "prediction": str(prediction),
+            "inputs": {
+                "days_to_deadline": days_to_deadline,
+                "estimated_effort": estimated_effort,
+                "business_impact": business_impact,
+                "urgency": urgency,
+                "dependency_count": dependency_count,
+                "task_type": task_type
+            }
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
 
 @app.route('/predict/batch', methods=['POST'])
 @login_required
